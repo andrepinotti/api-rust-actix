@@ -6,7 +6,9 @@ use sqlx::{Pool, Postgres};
 
 #[get("/users")]
 async fn get_all_users(app_state: web::Data<AppState>) -> impl Responder {
-    let result = sqlx::query!("SELECT * FROM users")
+    let result = sqlx::query_as::<_, AllUsers>(
+        "SELECT id, name, email, password FROM users"
+    )
     .fetch_all(&app_state.postgres_client)
     .await;
 
