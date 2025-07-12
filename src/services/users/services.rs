@@ -18,3 +18,7 @@ async fn get_all_users(app_state: web::Data<AppState>) -> impl Responder {
     }
 }
 
+/* NOTE -> function of configuration of routes */
+pub fn users_routes(cfg: &mut web::ServiceConfig){
+    cfg.service(get_all_users);
+}

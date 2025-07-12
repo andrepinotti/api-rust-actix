@@ -36,6 +36,7 @@ async fn main() -> std::io::Result<()> {
             postgres_client: _pool.clone()    
          }))
         .service(index)
+        .configure(services::users::services::users_routes)
     }).bind(("localhost", port))?.run().await
 
 }
