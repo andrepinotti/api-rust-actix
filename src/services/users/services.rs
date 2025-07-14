@@ -1,6 +1,6 @@
 use actix_web::{get, post, put, delete, web, HttpResponse, Responder};
 use super::models::{AllUsers, RegisterUser, UpdateUser};
-use crate::AppState;
+use crate::{services::users, AppState};
 use bcrypt::{DEFAULT_COST, hash, verify};
 use sqlx::{Pool, Postgres};
 
@@ -24,17 +24,32 @@ async fn create_users(app_state: web::Data<AppState>, user: web::Json<RegisterUs
 
     let hash = hash(&user.password, DEFAULT_COST).expect("Falha ao gerar a senha");
 
-    let result = sqlx::query_as::<_, user>(
-        ""
-    );
+    if !(hash != user.password){
+        return HttpResponse::InternalServerError().body("Erro ao gerar o hash");
+    }       
 
-   match result {
-    Ok() => HttpResponse::Ok().json(value),
-    Err(_) => HttpResponse::InternalServerError().body("Erro ao cadastrar o usuário")
-   } 
+    let result = sqlx::query_as::<_, AllUsers>
+    ("INSERT INTO users (name, email, password) VALUES ($1, $2, $3) RETURNING id, name, email, password")
+    .bind(&user.name)
+    .bind(&user.email)
+    .bind(&hash)
+    .fetch_one(&app_state.postgres_client)
+    .await;
+
+    match result {
+        Ok(user) => HttpResponse::Ok().json(AllUsers {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            password: user.password,
+        }),
+        Err(_) => HttpResponse::InternalServerError().body("Erro ao criar o usuário")
+    }
+ 
 }
 
 /* NOTE -> function of configuration of routes */
 pub fn users_routes(cfg: &mut web::ServiceConfig){
     cfg.service(get_all_users);
+    cfg.service(create_users);
 }
