@@ -1,8 +1,7 @@
 use actix_web::{get, post, put, delete, web, HttpResponse, Responder};
 use super::models::{AllUsers, RegisterUser, UpdateUser};
-use crate::{services::users, AppState};
-use bcrypt::{DEFAULT_COST, hash, verify};
-use sqlx::{Pool, Postgres};
+use crate::{AppState};
+use bcrypt::{DEFAULT_COST, hash, };
 
 #[get("/users")]
 async fn get_all_users(app_state: web::Data<AppState>) -> impl Responder {
@@ -73,9 +72,25 @@ async fn update_user(app_state: web::Data<AppState>, user: web::Json<UpdateUser>
 
 }
 
+#[delete("/users/{id}")]
+async fn delete_user(app_state: web::Data<AppState>, id: web::Path<i32>) -> impl Responder {
+
+    let result = sqlx::query!(
+        "DELETE FROM users WHERE id = $1 RETURNING id, name, email, password", 
+        id.into_inner()
+    ).fetch_optional(&app_state.postgres_client).await;
+
+    match result {
+        Ok(user) => HttpResponse::Ok().body("Usuário excluído com sucesso!"), 
+        Err(_) => HttpResponse::InternalServerError().body("Erro ao excluir o usuário")
+    }
+
+}
+
 /* NOTE -> function of configuration of routes */
 pub fn users_routes(cfg: &mut web::ServiceConfig){
     cfg.service(get_all_users);
     cfg.service(create_users);
     cfg.service(update_user);
+    cfg.service(delete_user);
 }
