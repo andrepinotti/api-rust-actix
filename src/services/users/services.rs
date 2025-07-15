@@ -48,6 +48,31 @@ async fn create_users(app_state: web::Data<AppState>, user: web::Json<RegisterUs
  
 }
 
+#[put("users/{id}")]
+async fn update_user(app_state: web::Data<AppState>, user: web::Json<UpdateUser>, id: web::Path<i32>) -> impl Responder{
+
+    let hash = hash(&user.password, DEFAULT_COST).expect("Falha ao gerar a senha");
+
+    if !(hash != user.password){
+        return HttpResponse::InternalServerError().body("Erro ao gerar o hash");
+    }
+
+    let result = sqlx::query!(
+        "UPDATE users SET name = $1, email = $2, password = $3 WHERE id = $4 RETURNING id, name, email, password",
+        &user.name, &user.email, &hash, id.into_inner()
+    ).fetch_one(&app_state.postgres_client).await;
+
+    match result {
+        Ok(user) => HttpResponse::Ok().json(UpdateUser {
+            name: user.name,
+            email: user.email,
+            password: user.password
+        }),
+        Err(_) => HttpResponse::InternalServerError().body("Erro ao atualizar o usuário")
+    }
+
+}
+
 /* NOTE -> function of configuration of routes */
 pub fn users_routes(cfg: &mut web::ServiceConfig){
     cfg.service(get_all_users);
