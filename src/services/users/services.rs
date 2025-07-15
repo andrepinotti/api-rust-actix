@@ -48,7 +48,7 @@ async fn create_users(app_state: web::Data<AppState>, user: web::Json<RegisterUs
  
 }
 
-#[put("users/{id}")]
+#[put("/users/{id}")]
 async fn update_user(app_state: web::Data<AppState>, user: web::Json<UpdateUser>, id: web::Path<i32>) -> impl Responder{
 
     let hash = hash(&user.password, DEFAULT_COST).expect("Falha ao gerar a senha");
