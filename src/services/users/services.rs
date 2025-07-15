@@ -77,4 +77,5 @@ async fn update_user(app_state: web::Data<AppState>, user: web::Json<UpdateUser>
 pub fn users_routes(cfg: &mut web::ServiceConfig){
     cfg.service(get_all_users);
     cfg.service(create_users);
+    cfg.service(update_user);
 }
